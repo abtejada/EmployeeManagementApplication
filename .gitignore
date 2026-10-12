@@ -1,0 +1,14 @@
+﻿# Visual Studio local files
+.vs/
+.vscode/
+
+# Build output
+bin/
+obj/
+
+# User-specific files
+*.user
+*.suo
+
+# Logs
+*.log

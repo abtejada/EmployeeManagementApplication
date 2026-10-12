@@ -1,0 +1,99 @@
+﻿@model IEnumerable<EmployeeManagementApp.Models.EmploymentHistory>
+
+@{
+    ViewData["Title"] = "Employment History";
+}
+
+<div class="content-header">
+    <div class="container-fluid">
+        <h1 class="m-0">Employment & Separation History</h1>
+    </div>
+</div>
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="card card-primary card-outline">
+            <div class="card-header">
+                <h3 class="card-title">Employee History Logs</h3>
+            </div>
+            <div class="card-body">
+                <!-- Search and Filter Form Header -->
+                <form method="get" class="mb-4">
+                    <div class="row">
+                        <div class="col-md-5 col-sm-6 mb-2">
+                            <label>Search History Logs</label>
+                            <div class="input-group">
+                                <input type="text" name="searchTerm" class="form-control" placeholder="Search by employee name or remarks...">
+                                <div class="input-group-append">
+                                    <button type="submit" class="btn btn-default">
+                                        <i class="fas fa-search"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3 col-sm-6 mb-2">
+                            <label>Filter by Event Type</label>
+                            <select name="eventTypeFilter" class="form-control">
+                                <option value="All">All Events</option>
+                                <option value="Hired">Hired Only</option>
+                                <option value="Separated">Separated Only</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4 col-sm-12 mb-2 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary mr-2">
+                                <i class="fas fa-filter"></i> Apply Filters
+                            </button>
+                            <a asp-controller="EmploymentHistory" asp-action="Index" class="btn btn-secondary">
+                                <i class="fas fa-undo"></i> Reset
+                            </a>
+                        </div>
+                    </div>
+                </form>
+
+                <!-- Data Table -->
+                <table class="table table-bordered table-striped">
+                    <thead>
+                        <tr>
+                            <th>History ID</th>
+                            <th>Employee ID</th>
+                            <th>Employee Name</th>
+                            <th>Event Type</th>
+                            <th>Event Date</th>
+                            <th>Department</th>
+                            <th>Position</th>
+                            <th>Remarks</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var history in Model)
+                        {
+                            <tr>
+                                <td>@history.Id</td>
+                                <td>EMP-@history.EmployeeId</td>
+                                <td><strong>@history.EmployeeName</strong></td>
+                                <td>
+                                    @if (history.EventType == "Separated")
+                                    {
+                                        <span class="badge badge-danger">Separated</span>
+                                    }
+                                    else if (history.EventType == "Hired")
+                                    {
+                                        <span class="badge badge-success">Hired</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge badge-info">@history.EventType</span>
+                                    }
+                                </td>
+                                <td>@history.EventDate.ToString("yyyy-MM-dd")</td>
+                                <td>@history.Department</td>
+                                <td>@history.Position</td>
+                                <td>@history.Remarks</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</section>
