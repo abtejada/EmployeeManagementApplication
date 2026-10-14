@@ -16,21 +16,15 @@ namespace EmployeeManagementApp.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> Index(string? searchTerm, string? statusFilter, int? pageNumber)
+        public async Task<IActionResult> Index(string? searchTerm)
         {
-            int pageSize = 10;
-            int pageIndex = pageNumber ?? 1;
-
             bool hasSearched = !string.IsNullOrWhiteSpace(searchTerm);
             ViewData["HasSearched"] = hasSearched;
+            ViewData["CurrentFilter"] = searchTerm;
 
-            // If user hasn't searched yet, return an empty list immediately
+            // Guard clause: If user hasn't searched yet, return an empty list immediately
             if (!hasSearched)
             {
-                ViewData["CurrentPage"] = 1;
-                ViewData["TotalPages"] = 1;
-                ViewData["CurrentFilter"] = "";
-                ViewData["CurrentStatus"] = statusFilter ?? "All";
                 return View(new List<EmployeeDirectoryViewModel>());
             }
 
@@ -38,16 +32,16 @@ namespace EmployeeManagementApp.Controllers
             var occupationQuery = _context.TimekeepingOccupationDetails.AsQueryable();
             var divisionQuery = _context.TimekeepingDivisions.AsQueryable();
 
-            // Search filter (Removed HRIS ID search parameter, keeping name & employee ID)
             var term = searchTerm.Trim();
             personnelQuery = personnelQuery.Where(p =>
-                p.GivenName.Contains(term) ||
-                p.Surname.Contains(term) ||
-                p.EmployeeId.Contains(term));
+                (p.GivenName + " " + p.Surname).Contains(term) ||
+                (p.EmployeeId != null && p.EmployeeId.Contains(term)));
 
             var personnelList = await personnelQuery.ToListAsync();
             var occupationList = await occupationQuery.ToListAsync();
-            var divisionList = await divisionQuery.ToListAsync();
+            var divisionList = await divisionQuery.ToListAsync(); // Or standard division query
+
+            DateOnly today = DateOnly.FromDateTime(DateTime.Today);
 
             var employeeDirectory = personnelList.Select(p =>
             {
@@ -58,21 +52,20 @@ namespace EmployeeManagementApp.Controllers
                     : null;
 
                 string hrisIdStr = p.HrisId.ToString().Trim() ?? "";
-                string deptName = div != null ? div.Sname : "Unassigned";
-
-                // Get today's date for comparison
-                DateOnly today = DateOnly.FromDateTime(DateTime.Today);
+                string deptName = div != null ? (div.Sname ?? "Unassigned") : "Unassigned";
 
                 bool hasSeparationValue = occ != null && occ.SeparationDate.HasValue;
-                DateOnly? sepDateOnly = hasSeparationValue ? DateOnly.FromDateTime(occ.SeparationDate.Value) : (DateOnly?)null;
+                bool isCurrentlySeparated = false;
+                string sepDateFormatted = "";
 
-                // An employee is considered "Active" if they have no separation date, 
-                // or if their separation date is today or in the future.
-                // They are only "Separated" if the separation date has actually passed (is strictly in the past).
-                bool isCurrentlySeparated = sepDateOnly.HasValue && sepDateOnly.Value <= today;
+                if (hasSeparationValue)
+                {
+                    DateOnly sepDateOnly = DateOnly.FromDateTime(occ.SeparationDate.Value);
+                    sepDateFormatted = sepDateOnly.ToString("yyyy-MM-dd");
+                    isCurrentlySeparated = sepDateOnly <= today;
+                }
+
                 bool isActive = !isCurrentlySeparated;
-
-                string sepDateFormatted = hasSeparationValue ? sepDateOnly.Value.ToString("yyyy-MM-dd") : "";
 
                 return new EmployeeDirectoryViewModel
                 {
@@ -85,27 +78,11 @@ namespace EmployeeManagementApp.Controllers
                     IsActive = isActive,
                     SeparationDateFormatted = sepDateFormatted,
                     SeparationReason = occ?.SeparationReason ?? "",
-                    HasExistingSeparation = hasSeparationValue // Keeps track if a date exists in input for modal mode
+                    HasExistingSeparation = hasSeparationValue
                 };
-            }).AsQueryable();
+            }).ToList();
 
-            int totalItems = employeeDirectory.Count();
-            int totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
-
-            if (totalPages > 0 && pageIndex > totalPages) pageIndex = totalPages;
-            if (pageIndex < 1) pageIndex = 1;
-
-            var paginatedItems = employeeDirectory
-                .Skip((pageIndex - 1) * pageSize)
-                .Take(pageSize)
-                .ToList();
-
-            ViewData["CurrentPage"] = pageIndex;
-            ViewData["TotalPages"] = totalPages > 0 ? totalPages : 1;
-            ViewData["CurrentFilter"] = searchTerm;
-            ViewData["CurrentStatus"] = statusFilter ?? "All";
-
-            return View(paginatedItems);
+            return View(employeeDirectory);
         }
 
         [HttpPost]
@@ -172,11 +149,8 @@ namespace EmployeeManagementApp.Controllers
         }
 
         [HttpGet]
-        public async Task<IActionResult> SeparationHistory(string? searchTerm, int? pageNumber)
+        public async Task<IActionResult> SeparationHistory()
         {
-            int pageSize = 10;
-            int pageIndex = pageNumber ?? 1;
-
             var baseQuery = from h in _context.EmployeeSeparationHistories
                             join p in _context.PmsPersonnelInformations on h.HrisId equals p.HrisId
                             select new
@@ -192,33 +166,15 @@ namespace EmployeeManagementApp.Controllers
                                 h.CreatedAt
                             };
 
-            if (!string.IsNullOrWhiteSpace(searchTerm))
-            {
-                var term = searchTerm.Trim();
-                baseQuery = baseQuery.Where(s =>
-                    (s.GivenName + " " + s.Surname).Contains(term) ||
-                    s.EmployeeId.Contains(term) ||
-                    s.HrisId.ToString().Contains(term));
-            }
-
-            var totalItems = await baseQuery.CountAsync();
-            int totalPages = (int)Math.Ceiling(totalItems / (double)pageSize);
-
-            if (totalPages > 0 && pageIndex > totalPages) pageIndex = totalPages;
-            if (pageIndex < 1) pageIndex = 1;
-
-            var pagedData = await baseQuery
+            var historyData = await baseQuery
                 .OrderByDescending(h => h.SeparationLogId)
-                .Skip((pageIndex - 1) * pageSize)
-                .Take(pageSize)
                 .ToListAsync();
 
-            var hrisIds = pagedData.Select(x => x.HrisId).ToList();
+            var hrisIds = historyData.Select(x => x.HrisId).ToList();
             var occupations = await _context.TimekeepingOccupationDetails
                 .Where(o => hrisIds.Contains(o.HrisId))
                 .ToListAsync();
 
-            // Fetch all divisions so we can map sname in separation history too
             var divisions = await _context.TimekeepingDivisions.ToListAsync();
 
             var occupationDict = occupations
@@ -227,11 +183,10 @@ namespace EmployeeManagementApp.Controllers
 
             var divisionDict = divisions.ToDictionary(d => d.Id, d => d.Sname);
 
-            var paginatedItems = pagedData.Select(x =>
+            var historyItems = historyData.Select(x =>
             {
                 occupationDict.TryGetValue(x.HrisId, out var occ);
 
-                // Translate division ID to sname short name
                 string deptName = "Unassigned";
                 if (occ != null && occ.Division.HasValue && divisionDict.TryGetValue(occ.Division.Value, out var sname))
                 {
@@ -244,7 +199,7 @@ namespace EmployeeManagementApp.Controllers
                     EmployeeId = string.IsNullOrEmpty(x.EmployeeId) ? "N/A" : x.EmployeeId,
                     EmployeeCode = x.HrisId.ToString(),
                     FullName = (x.GivenName + " " + x.Surname).Trim(),
-                    Department = deptName, // Now shows clean sname instead of raw ID number
+                    Department = deptName,
                     Position = occ != null && occ.Position != null ? occ.Position.ToString() : "Unassigned",
                     SeparationDate = x.SeparationDate,
                     SeparationReason = x.SeparationReason,
@@ -253,11 +208,7 @@ namespace EmployeeManagementApp.Controllers
                 };
             }).ToList();
 
-            ViewData["CurrentPage"] = pageIndex;
-            ViewData["TotalPages"] = totalPages > 0 ? totalPages : 1;
-            ViewData["CurrentFilter"] = searchTerm;
-
-            return View(paginatedItems);
+            return View(historyItems);
         }
     }
 }
