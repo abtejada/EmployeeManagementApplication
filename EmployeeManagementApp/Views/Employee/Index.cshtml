@@ -1,4 +1,4 @@
-﻿@model IEnumerable<EmployeeManagementApp.Controllers.EmployeeDirectoryViewModel>
+﻿@model IEnumerable<EmployeeManagementApp.Models.EmployeeDirectoryViewModel>
 
 @{
     ViewData["Title"] = "Employee Directory";
@@ -6,16 +6,17 @@
 
 <div class="content-header">
     <div class="container-fluid">
-        <h1 class="m-0">Employee Directory</h1>
+        <h1 class="m-0">Employee Separation Module</h1>
     </div>
 </div>
 
 <section class="content">
     <div class="container-fluid">
         <div class="card card-primary card-outline">
-            <div class="card-header">
-                <h3 class="card-title">Employee Records</h3>
-            </div>
+        <div class="card card-primary card-outline">
+            @* <div class="card-header">
+                <h3 class="card-title"></h3>
+            </div> *@
             <div class="card-body">
                 <!-- Search and Filter Form Header -->
                 <form method="get" class="mb-4">
@@ -31,7 +32,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-md-3 col-sm-6 mb-2">
+                        @* <div class="col-md-3 col-sm-6 mb-2">
                             <label>Filter by Status</label>
                             <select name="statusFilter" class="form-control">
                                 <option value="All">All Statuses</option>
@@ -46,68 +47,79 @@
                             <a asp-controller="Employee" asp-action="Index" class="btn btn-secondary">
                                 <i class="fas fa-undo"></i> Reset
                             </a>
-                        </div>
+                        </div> *@
                     </div>
                 </form>
 
                 <!-- Data Table -->
-                <table class="table table-bordered table-striped">
-                    <thead>
-                        <tr>
-                            <th>No.</th> <!-- Added missing header for the sequential ID -->
-                            <th>HRIS ID</th>
-                            <th>Full Name</th>
-                            <th>Department</th>
-                            <th>Position</th>
-                            <th>Status</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @if (Model != null && Model.Any())
-                        {
-                            foreach (var item in Model)
+                    <table class="table table-bordered table-hover">
+                        <thead>
+                            <tr>
+                                <th>Employee ID</th>
+                                <th>Full Name</th>
+                                <th>Department</th>
+                                <th>Position</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (ViewData["HasSearched"] as bool? == false)
                             {
                                 <tr>
-                                    <td>@item.Id</td>
-                                    <td>@item.EmployeeCode</td>
-                                    <td>@item.FullName</td>
-                                    <td>@item.Department</td>
-                                    <td>@item.Position</td>
-                                    <td>
-                                        @if (item.IsActive)
-                                        {
-                                            <span class="badge bg-success">Active</span>
-                                        }
-                                        else
-                                        {
-                                            <span class="badge bg-danger">Separated</span>
-                                        }
-                                    </td>
-                                    <td>
-                                        <!-- Button that triggers the Separation Modal -->
-                                        <button type="button" class="btn btn-sm btn-outline-primary open-separation-modal"
-                                                data-emp-id="@item.EmployeeCode"
-                                                data-emp-name="@item.FullName">
-                                            <i class="fas fa-user-slash"></i> Separation
-                                        </button>
-
+                                    <td colspan="6" class="text-center text-muted py-5">
+                                        <i class="fas fa-search fa-2x mb-2"></i>
+                                        <p class="mb-0"><strong>Please search for an employee to view separation records.</strong></p>
                                     </td>
                                 </tr>
                             }
-                        }
-                        else
-                        {
-                            <tr>
-                                <td colspan="6" class="text-center text-muted py-4">
-                                    <i class="fas fa-search fa-2x mb-2 d-block"></i>
-                                    No employee records found matching your search criteria.
-                                </td>
-                            </tr>
-
-                        }
-                    </tbody>
-                </table>
+                            else if (!Model.Any())
+                            {
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted py-5">
+                                        <i class="fas fa-info-circle fa-2x mb-2"></i>
+                                        <p class="mb-0">No employees found matching your search criteria.</p>
+                                    </td>
+                                </tr>
+                            }
+                            else
+                            {
+                                @foreach (var item in Model)
+                                {
+                                    <tr>
+                                        <td>@item.EmployeeId</td>
+                                        <td>@item.FullName</td>
+                                        <td>@item.Department</td>
+                                        <td>@item.Position</td>
+                                        <td>
+                                            @if (item.IsActive)
+                                            {
+                                                <span class="badge badge-success">Active</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="badge badge-danger">Separated</span>
+                                            }
+                                        </td>
+                                        <td>
+                                            <button type="button"
+                                                    class="btn btn-sm @(item.HasExistingSeparation ? "btn-warning" : "btn-outline-danger") open-separation-modal"
+                                                    data-emp-id="@item.EmployeeCode"
+                                                    data-emp-name="@item.FullName"
+                                                    data-emp-pos="@item.Position"
+                                                    data-emp-div="@item.Department"
+                                                    data-sep-date="@item.SeparationDateFormatted"
+                                                    data-sep-reason="@item.SeparationReason"
+                                                    data-has-sep="@item.HasExistingSeparation.ToString().ToLower()">
+                                                <i class="fas @(item.HasExistingSeparation ? "fa-edit" : "fa-user-slash") mr-1"></i>
+                                                @(item.HasExistingSeparation ? "Edit Separation" : "Set Separation")
+                                            </button>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                        </tbody>
+                    </table>
                 <!-- Pagination Controls (Max 10 visible pages) -->
                 <div class="card-footer clearfix">
                     <ul class="pagination pagination-sm m-0 float-right">
@@ -184,89 +196,193 @@
         </div>
     </div>
 </section>
-<!-- Separation Modal -->
-<div class="modal fade" id="separationModal" tabindex="-1" role="dialog" aria-labelledby="separationModalLabel" aria-hidden="true">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <form id="separationForm">
-                @Html.AntiForgeryToken()
-                <div class="modal-header bg-danger text-white">
-                    <h5 class="modal-title" id="separationModalLabel">Update Employee Separation</h5>
-                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+    <!-- 1. Main Separation Modal -->
+    <div class="modal fade" id="separationModal" tabindex="-1" role="dialog" aria-labelledby="separationModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <form id="separationForm">
+                    <div class="modal-header bg-danger text-white">
+                        <h5 class="modal-title" id="separationModalLabel">Confirm Employee Separation</h5>
+                        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <!-- Hidden Field for HRIS ID / Code -->
+                        <input type="hidden" id="modalEmployeeCode" name="employeeCode" />
+
+                        <div class="form-group mb-3">
+                            <label><strong>Employee Name:</strong></label>
+                            <input type="text" id="modalEmployeeName" class="form-control" readonly />
+                        </div>
+                        <div class="form-group mb-3">
+                            <label><strong>Position:</strong></label>
+                            <input type="text" id="modalEmployeePosition" class="form-control" readonly />
+                        </div>
+                        <div class="form-group mb-3">
+                            <label><strong>Department / Division:</strong></label>
+                            <input type="text" id="modalEmployeeDivision" class="form-control" readonly />
+                        </div>
+
+                        <hr />
+
+                        <div class="form-group mb-3">
+                            <label for="separationDate"><strong>Separation Date <span class="text-danger">*</span></strong></label>
+                            <input type="date" id="separationDate" class="form-control" required />
+                            <div class="invalid-feedback">Please select a separation date.</div>
+                        </div>
+
+                        <div class="form-group mb-3">
+                            <label for="separationReason"><strong>Separation Reason / Remarks <span class="text-danger">*</span></strong></label>
+                            <textarea id="separationReason" class="form-control" rows="3" placeholder="Enter reason for separation..." required></textarea>
+                            <div class="invalid-feedback">Please provide a reason for separation.</div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <!-- NEW: Clear Date Button -->
+                        <button type="button" class="btn btn-outline-secondary mr-auto" id="btnClearSeparationDate">
+                            <i class="fas fa-times-circle"></i> Clear Date
+                        </button>
+
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-danger" id="btnSubmitSeparation">Proceed to Separate</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. Separate Bootstrap Confirmation Modal (Placed outside as a sibling) -->
+    <div class="modal fade" id="confirmActionModal" tabindex="-1" role="dialog" aria-labelledby="confirmActionLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header bg-warning">
+                    <h5 class="modal-title font-weight-bold" id="confirmActionLabel">
+                        <i class="fas fa-exclamation-triangle mr-2"></i>Confirm Action
+                    </h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                         <span aria-hidden="true">&times;</span>
                     </button>
                 </div>
-                <div class="modal-body">
-                    <!-- Hidden field to store Employee Code/ID -->
-                    <input type="hidden" id="modalEmployeeCode" name="EmployeeCode" />
-
-                    <div class="form-group mb-3">
-                        <label>Employee Name:</label>
-                        <input type="text" id="modalEmployeeName" class="form-control" readonly />
-                    </div>
-
-                    <div class="form-group mb-3">
-                        <label for="separationDate">Separation Date:</label>
-                        <input type="date" id="separationDate" name="SeparationDate" class="form-control" />
-                    </div>
-
-                    <div class="form-group mb-3">
-                        <label for="separationReason">Reason / Remarks:</label>
-                        <textarea id="separationReason" name="SeparationReason" class="form-control" rows="3" placeholder="Enter reason for separation..."></textarea>
-                    </div>
+                <div class="modal-body" id="confirmActionBody">
+                    <!-- Message dynamically populated via JS -->
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-danger">Save Separation Record</button>
+                    <button type="button" class="btn btn-danger" id="btnConfirmActionSubmit">Yes, Proceed</button>
                 </div>
-            </form>
+            </div>
         </div>
     </div>
-</div>
 
-@section Scripts {
-    <script>
-        $(document).ready(function () {
-            // Open modal and populate data when button is clicked
-            $('.open-separation-modal').click(function () {
-                var empCode = $(this).data('emp-id');
-                var empName = $(this).data('emp-name');
-
-                $('#modalEmployeeCode').val(empCode);
-                $('#modalEmployeeName').val(empName);
-                $('#separationDate').val('');
-                $('#separationReason').val('');
-
-                $('#separationModal').modal('show');
+    @section Scripts {
+        <script>
+            document.getElementById('btnClearSeparationDate').addEventListener('click', function() {
+                document.getElementById('separationDate').value = '';
+                document.getElementById('separationReason').value = '';
             });
 
-            // Handle AJAX form submission for updating separation
-            $('#separationForm').submit(function (e) {
-                e.preventDefault();
+            $(document).ready(function() {
 
-                var formData = {
-                    employeeCode: $('#modalEmployeeCode').val(),
-                    separationDate: $('#separationDate').val(),
-                    separationReason: $('#separationReason').val()
-                };
+                // 1. Open modal and populate data with dynamic Edit vs. Set mode
+                $(document).on('click', '.open-separation-modal', function() {
+                    var empId = $(this).data('emp-id');
+                    var empName = $(this).data('emp-name');
+                    var empPos = $(this).data('emp-pos');
+                    var empDiv = $(this).data('emp-div');
+                    var sepDate = $(this).data('sep-date');
+                    var sepReason = $(this).data('sep-reason');
+                    var hasSep = $(this).data('has-sep') === true;
 
-                $.ajax({
-                    url: '/Employee/UpdateSeparation',
-                    type: 'POST',
-                    data: formData,
-                   success: function (response) {
-                        if (response.success) {
-                            $('#separationModal').modal('hide');
-                            location.reload(); // Refreshes page to render the updated badge
-                        } else {
-                            alert(response.message || "Failed to update separation status.");
-                        }
-                    },
-                    error: function () {
-                        alert('An error occurred while saving the separation record.');
+                    $('#modalEmployeeCode').val(empId);
+                    $('#modalEmployeeName').val(empName);
+                    $('#modalEmployeePosition').val(empPos);
+                    $('#modalEmployeeDivision').val(empDiv);
+
+                    // Pre-fill existing separation details if present
+                    $('#separationDate').val(sepDate || '');
+                    $('#separationReason').val(sepReason || '');
+                    $('#separationForm').removeClass('was-validated');
+
+                    // Dynamic UI updates based on whether separation exists
+                    var $header = $('#separationModalHeader');
+                    var $submitBtn = $('#btnSubmitSeparation');
+
+                    if (hasSep) {
+                        $header.removeClass('bg-danger').addClass('bg-warning text-dark');
+                        $('#separationModalTitle').html('<i class="fas fa-user-edit mr-2"></i>Edit Separation Details');
+                        $submitBtn.removeClass('btn-danger').addClass('btn-warning').text('Update Separation Date');
+                        $('#separationDate').removeAttr('required'); // Allow null/clearing
+                    } else {
+                        $header.removeClass('bg-warning text-dark').addClass('bg-danger text-white');
+                        $('#separationModalTitle').html('<i class="fas fa-user-slash mr-2"></i>Confirm Employee Separation');
+                        $submitBtn.removeClass('btn-warning').addClass('btn-danger').text('Proceed to Separate');
+                        $('#separationDate').attr('required', 'required');
                     }
+
+                    $('#separationModal').modal('show');
                 });
+
+                // 2. Intercept form submission for confirmation prompt
+                $('#separationForm').on('submit', function(e) {
+                    e.preventDefault();
+                    var form = this;
+
+                    if (form.checkValidity() === false) {
+                        e.stopPropagation();
+                        $(form).addClass('was-validated');
+                        return;
+                    }
+
+                    var empName = $('#modalEmployeeName').val();
+                    var sepDate = $('#separationDate').val();
+                    var hasSep = $('#btnSubmitSeparation').hasClass('btn-warning');
+
+                    var confirmMsg = '';
+                    if (!sepDate) {
+                        confirmMsg = 'Are you sure you want to <strong>remove</strong> the separation record for <strong>' + empName + '</strong> and restore active status?';
+                    } else if (hasSep) {
+                        confirmMsg = 'Are you sure you want to update the separation details for <strong>' + empName + '</strong> to effective <strong>' + sepDate + '</strong>?';
+                    } else {
+                        confirmMsg = 'Are you sure you want to mark <strong>' + empName + '</strong> as separated effective <strong>' + sepDate + '</strong>?';
+                    }
+
+                    $('#confirmActionBody').html(confirmMsg);
+                    $('#confirmActionModal').modal('show');
+                });
+
+                // 3. Confirm and execute AJAX submission
+                $('#btnConfirmActionSubmit').on('click', function() {
+                    $('#confirmActionModal').modal('hide');
+
+                    var formData = {
+                        employeeCode: $('#modalEmployeeCode').val(),
+                        separationDate: $('#separationDate').val() || null,
+                        separationReason: $('#separationReason').val()
+                    };
+
+                    var $submitBtn = $('#btnSubmitSeparation').prop('disabled', true);
+
+                    $.ajax({
+                        url: '/Employee/UpdateSeparation',
+                        type: 'POST',
+                        data: formData,
+                        success: function(response) {
+                            $submitBtn.prop('disabled', false);
+                            if (response.success) {
+                                $('#separationModal').modal('hide');
+                                location.reload();
+                            } else {
+                                alert('Error: ' + response.message);
+                            }
+                        },
+                        error: function(xhr, status, error) {
+                            $submitBtn.prop('disabled', false);
+                            alert('AJAX Error: ' + (xhr.responseText || error));
+                        }
+                    });
+                });
+
             });
-        });
-    </script>
-}
+        </script>
+    }

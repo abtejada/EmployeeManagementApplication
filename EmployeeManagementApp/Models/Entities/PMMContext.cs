@@ -14,6 +14,7 @@ public partial class PMMContext : DbContext
         : base(options)
     {
     }
+    public DbSet<EmployeeSeparationHistory> EmployeeSeparationHistories { get; set; }
 
     public virtual DbSet<Awardee> Awardees { get; set; }
 
@@ -1914,10 +1915,14 @@ public partial class PMMContext : DbContext
 
         modelBuilder.Entity<TimekeepingDivision>(entity =>
         {
-            entity
-                .HasNoKey()
-                .ToTable("timekeeping_Division");
+            entity.ToTable("timekeeping_Division");
 
+            // Define 'id' as the primary key instead of saying it has no key
+            entity.HasKey(e => e.Id);
+
+            entity.Property(e => e.Id)
+                .ValueGeneratedOnAdd()
+                .HasColumnName("id");
             entity.Property(e => e.AlternateHead).HasColumnName("alternate_head");
             entity.Property(e => e.AlternateHeadDesignation)
                 .HasMaxLength(50)
@@ -1929,9 +1934,6 @@ public partial class PMMContext : DbContext
                 .HasColumnName("designation");
             entity.Property(e => e.DivIdSuperior).HasColumnName("div_id_superior");
             entity.Property(e => e.HeadHrisId).HasColumnName("head_hris_id");
-            entity.Property(e => e.Id)
-                .ValueGeneratedOnAdd()
-                .HasColumnName("id");
             entity.Property(e => e.Name)
                 .HasMaxLength(150)
                 .IsUnicode(false)
@@ -2516,28 +2518,16 @@ public partial class PMMContext : DbContext
 
         modelBuilder.Entity<TimekeepingOccupationDetail>(entity =>
         {
-            entity
-                .HasNoKey()
-                .ToTable("timekeeping_OccupationDetails");
+            entity.ToTable("timekeeping_OccupationDetails");
 
-            entity.Property(e => e.AllowGraceperiod).HasColumnName("allow_graceperiod");
-            entity.Property(e => e.CustomSched).HasColumnName("custom_sched");
-            entity.Property(e => e.Division).HasColumnName("division");
-            entity.Property(e => e.EmploymentStats).HasColumnName("employment_stats");
-            entity.Property(e => e.Fwa).HasColumnName("FWA");
-            entity.Property(e => e.HiredDate).HasColumnName("hired_date");
+            // Explicitly define 'id' as the primary key so EF Core can track and update it
+            entity.HasKey(e => e.Id);
+
+            // Map columns if needed, or let your data annotations handle it
+            entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.HrisId).HasColumnName("hris_id");
-            entity.Property(e => e.Id)
-                .ValueGeneratedOnAdd()
-                .HasColumnName("id");
-            entity.Property(e => e.MandatoryImmunity).HasColumnName("mandatory_immunity");
-            entity.Property(e => e.Position)
-                .HasMaxLength(50)
-                .IsUnicode(false)
-                .HasColumnName("position");
-            entity.Property(e => e.Schedule).HasColumnName("schedule");
-            entity.Property(e => e.Section).HasColumnName("section");
             entity.Property(e => e.SeparationDate).HasColumnName("separation_date");
+            entity.Property(e => e.SeparationReason).HasColumnName("separation_reason");
         });
 
         modelBuilder.Entity<TimekeepingOfficialBusiness>(entity =>
