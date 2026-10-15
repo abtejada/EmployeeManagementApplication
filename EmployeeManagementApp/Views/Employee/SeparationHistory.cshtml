@@ -15,7 +15,6 @@
         <div class="card card-primary card-outline">
             <div class="card-body">
 
-                <!-- Data Table handled entirely by DataTables.net (Search, Pagination, Sorting) -->
                 <div class="table-responsive">
                     <table id="separationHistoryTable" class="table table-bordered table-striped" style="width:100%">
                         <thead>
@@ -68,18 +67,17 @@
 </section>
 
 @section Scripts {
-    <!-- DataTables JS Initialization -->
     <script>
         $(document).ready(function() {
             $('#separationHistoryTable').DataTable({
                 "responsive": true,
                 "autoWidth": false,
-                "paging": true,       // Native DataTables pagination
-                "pageLength": 10,     // Default rows per page
-                "lengthChange": true, // Allow user to change records per page
-                "searching": true,    // Enables the built-in DataTables search box automatically
-                "info": true,         // Shows entry count info
-                "order": [[0, "desc"]] // Default sort descending by Log ID (newest first)
+                "paging": true,          
+                "pageLength": 10,         
+                "lengthChange": true,        
+                "searching": true,           
+                "info": true,             
+                "order": [[0, "desc"]]         
             });
         });
     </script>

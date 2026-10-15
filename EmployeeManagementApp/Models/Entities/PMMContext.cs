@@ -1917,7 +1917,6 @@ public partial class PMMContext : DbContext
         {
             entity.ToTable("timekeeping_Division");
 
-            // Define 'id' as the primary key instead of saying it has no key
             entity.HasKey(e => e.Id);
 
             entity.Property(e => e.Id)
@@ -2520,10 +2519,8 @@ public partial class PMMContext : DbContext
         {
             entity.ToTable("timekeeping_OccupationDetails");
 
-            // Explicitly define 'id' as the primary key so EF Core can track and update it
             entity.HasKey(e => e.Id);
 
-            // Map columns if needed, or let your data annotations handle it
             entity.Property(e => e.Id).HasColumnName("id");
             entity.Property(e => e.HrisId).HasColumnName("hris_id");
             entity.Property(e => e.SeparationDate).HasColumnName("separation_date");

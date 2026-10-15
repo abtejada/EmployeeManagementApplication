@@ -9,7 +9,6 @@ namespace EmployeeManagementApp.Controllers
     {
         private readonly PMMContext _context;
 
-        // Inject PMMContext via Dependency Injection
         public EmployeeController(PMMContext context)
         {
             _context = context;
@@ -22,7 +21,6 @@ namespace EmployeeManagementApp.Controllers
             ViewData["HasSearched"] = hasSearched;
             ViewData["CurrentFilter"] = searchTerm;
 
-            // Guard clause: If user hasn't searched yet, return an empty list immediately
             if (!hasSearched)
             {
                 return View(new List<EmployeeDirectoryViewModel>());
@@ -39,7 +37,7 @@ namespace EmployeeManagementApp.Controllers
 
             var personnelList = await personnelQuery.ToListAsync();
             var occupationList = await occupationQuery.ToListAsync();
-            var divisionList = await divisionQuery.ToListAsync(); // Or standard division query
+            var divisionList = await divisionQuery.ToListAsync();     
 
             DateOnly today = DateOnly.FromDateTime(DateTime.Today);
 
@@ -115,16 +113,14 @@ namespace EmployeeManagementApp.Controllers
                         _context.TimekeepingOccupationDetails.Add(newOccupation);
                     }
 
-                    // Capture the actual user input remarks, or fall back depending on whether date is set or cleared
                     string finalReason = !string.IsNullOrWhiteSpace(separationReason)
                         ? separationReason
                         : (separationDate.HasValue ? "Separation date updated" : "Separation date removed / Restored to active");
 
-                    // Record history into your EmployeeSeparationHistories table using your exact model properties
                     var newHistory = new EmployeeSeparationHistory
                     {
                         HrisId = hrisId,
-                        SeparationDate = separationDate, // Accepts null when clearing/removing the date
+                        SeparationDate = separationDate,       
                         SeparationReason = finalReason,
                         SeparatedBy = User.Identity?.Name ?? "System",
                         CreatedAt = DateTime.Now
