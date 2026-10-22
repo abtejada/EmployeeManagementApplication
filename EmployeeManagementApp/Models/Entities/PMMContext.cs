@@ -14,6 +14,8 @@ public partial class PMMContext : DbContext
         : base(options)
     {
     }
+    public virtual DbSet<DivisionAuditLog> DivisionAuditLogs { get; set; }
+    public virtual DbSet<EmployeeProfileAuditLog> EmployeeProfileAuditLogs { get; set; }
     public DbSet<EmployeeSeparationHistory> EmployeeSeparationHistories { get; set; }
 
     public virtual DbSet<Awardee> Awardees { get; set; }

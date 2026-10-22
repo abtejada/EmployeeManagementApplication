@@ -34,6 +34,32 @@
                     <a asp-controller="Home" asp-action="Index" class="nav-link">Home</a>
                 </li>
             </ul>
+        </ul>
+        <ul class="navbar-nav ml-auto">
+            @if (User.Identity != null && User.Identity.IsAuthenticated)
+            {
+                <li class="nav-item dropdown">
+                    <span class="nav-link text-dark font-weight-bold">
+                        <i class="fas fa-user-circle mr-1 text-primary"></i> @User.Identity.Name
+                    </span>
+                </li>
+                <li class="nav-item">
+                    <form asp-controller="Account" asp-action="Logout" method="post" class="form-inline ml-2">
+                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Sign Out">
+                            <i class="fas fa-sign-out-alt mr-1"></i> Logout
+                        </button>
+                    </form>
+                </li>
+            }
+            else
+            {
+                <li class="nav-item">
+                    <a class="btn btn-sm btn-primary" asp-controller="Account" asp-action="Login">
+                        <i class="fas fa-sign-in-alt mr-1"></i> Login
+                    </a>
+                </li>
+            }
+        </ul>
         </nav>
 
         <aside class="main-sidebar sidebar-dark-primary elevation-4">
@@ -50,6 +76,11 @@
                                 <p>Employee Update</p>
                             </a>
                         </li>
+                    <li class="nav-item">
+                        <a class="nav-link" asp-controller="Employee" asp-action="AuditHistory">
+                            <i class="fas fa-history mr-1"></i> Profile Audit Logs
+                        </a>
+                    </li>
                         <li class="nav-item">
                             <a asp-controller="Employee" asp-action="SeparationHistory" class="nav-link">
                                 <i class="nav-icon fas fa-history"></i>
@@ -64,7 +95,14 @@
                                 </p>
                             </a>
                         </li>
-                    </ul>
+                    <li class="nav-item">
+                        <a class="nav-link @(ViewContext.RouteData.Values["Controller"]?.ToString() == "Division" && ViewContext.RouteData.Values["Action"]?.ToString() == "AuditHistory" ? "active" : "")"
+                           asp-controller="Division"
+                           asp-action="AuditHistory">
+                            <i class="nav-icon fas fa-history"></i>
+                            <p>Division Audit Logs</p>
+                        </a>
+                    </li>
                 </nav>
             </div>
         </aside>

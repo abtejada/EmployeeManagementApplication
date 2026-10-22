@@ -200,53 +200,47 @@
 
 <!-- Separation Modal -->
 <div class="modal fade" id="separationModal" tabindex="-1" role="dialog" aria-hidden="true">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
+    <div class="modal-dialog modal-md" role="document">
+        <div class="modal-content shadow-lg border-0">
+            <div id="separationModalHeader" class="modal-header bg-danger text-white">
+                <h5 class="modal-title" id="separationModalTitle"><i class="fas fa-user-slash mr-2"></i>Set Employee Separation</h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
             <form id="separationForm">
-                <div class="modal-header bg-danger text-white" id="separationModalHeader">
-                    <h5 class="modal-title" id="separationModalTitle"><i class="fas fa-user-slash mr-2"></i>Manage Separation</h5>
-                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true">&times;</span>
-                    </button>
-                </div>
-                <div class="modal-body">
+                <div class="modal-body px-4 py-3">
                     <input type="hidden" id="separationEmployeeCode" name="EmployeeCode" />
 
                     <div class="form-group mb-3">
-                        <label><strong>Employee Name:</strong></label>
+                        <label class="font-weight-semibold text-secondary small text-uppercase">Employee Name</label>
                         <input type="text" id="separationEmployeeName" class="form-control bg-light" readonly />
                     </div>
 
                     <div class="form-group mb-3">
-                        <label for="separationDate"><strong>Separation Date <span class="text-danger">*</span></strong></label>
+                        <label class="font-weight-semibold text-secondary small text-uppercase">Separation Date <span class="text-danger">*</span></label>
                         <input type="date" id="separationDate" name="SeparationDate" class="form-control" required />
                     </div>
 
-                    <!-- Predefined Reason Dropdown (Required, No default placeholder value) -->
                     <div class="form-group mb-3">
-                        <label for="separationReason"><strong>Separation Reason <span class="text-danger">*</span></strong></label>
-                        <select id="separationReason" name="SeparationReason" class="form-control" required>
-                            <option value="">-- Select Reason --</option>
-                            <option value="Resigned">Resigned</option>
-                            <option value="Terminated">Terminated</option>
-                            <option value="Retired">Retired</option>
-                            <option value="End of Contract">End of Contract</option>
-                            <option value="Clear Separation Date">Clear Separation Date</option>
-                        </select>
+                        <label class="font-weight-semibold text-secondary small text-uppercase">Reason <span class="text-danger">*</span></label>
+                        <input type="text" id="separationReason" name="SeparationReason" class="form-control" placeholder="Enter reason..." required />
                     </div>
 
-                    <!-- Separate Remarks Textarea (Required) -->
                     <div class="form-group mb-3">
-                        <label for="separationRemarks"><strong>Remarks <span class="text-danger">*</span></strong></label>
-                        <textarea id="separationRemarks" name="SeparationRemarks" class="form-control" rows="3" placeholder="Enter mandatory separation remarks..." required></textarea>
+                        <label class="font-weight-semibold text-secondary small text-uppercase">Remarks <span class="text-danger">*</span></label>
+                        <textarea id="separationRemarks" name="SeparationRemarks" class="form-control" rows="3" placeholder="Enter detailed remarks..." required></textarea>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary mr-auto" id="btnClearSeparation" title="Clearing separation restores active status">
-                        <i class="fas fa-times-circle"></i> Clear Separation (Restore Active)
+                <div class="modal-footer bg-light px-4 d-flex justify-content-between">
+                    <!-- Shown ONLY if employee already has a separation date -->
+                    <button type="button" class="btn btn-outline-danger" id="btnClearSeparation" style="display: none;">
+                        <i class="fas fa-undo mr-1"></i> Clear Separation
                     </button>
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-danger" id="btnSubmitSeparation">Save Separation</button>
+                    <div>
+                        <button type="button" class="btn btn-secondary px-3" data-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-danger px-3 shadow-sm" id="btnSubmitSeparation">Proceed</button>
+                    </div>
                 </div>
             </form>
         </div>
@@ -347,31 +341,8 @@
             // ==========================================
             // 2. SEPARATION MODAL HANDLERS
             // ==========================================
-            $('#btnClearSeparation').on('click', function() {
-                // Clear the date field and remove its required attribute (since clearing means null date)
-                $('#separationDate').val('').removeAttr('required');
 
-                // Keep Reason and Remarks mandatory so user must provide an explanation for clearing/restoring
-                $('#separationReason').attr('required', 'required');
-                $('#separationRemarks').attr('required', 'required');
-
-                var empName = $('#separationEmployeeName').val();
-
-                Swal.fire({
-                    title: 'Restore Active Status?',
-                    html: 'Are you sure you want to <strong>remove the separation record</strong> for <strong>' + empName + '</strong> and restore active status?<br/><br/><small class="text-muted">Please ensure you have filled out the Reason and Remarks fields to record why this is being cleared.</small>',
-                    icon: 'question',
-                    showCancelButton: true,
-                    confirmButtonColor: '#28a745',
-                    cancelButtonColor: '#6c757d',
-                    confirmButtonText: 'Yes, proceed to restore!'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        $('#separationForm').submit();
-                    }
-                });
-            });
-
+            // Handle Opening Separation Modal
             $(document).on('click', '.open-separation-modal', function() {
                 var $btn = $(this);
                 var empCode = $btn.data('emp-code');
@@ -384,27 +355,55 @@
                 $('#separationEmployeeCode').val(empCode);
                 $('#separationEmployeeName').val(empName);
 
-                // Make all fields required when opening modal normally
-                $('#separationDate').val(sepDate || '').attr('required', 'required');
-                $('#separationReason').val(sepReason || '').attr('required', 'required');
-                $('#separationRemarks').val(sepRemarks || '').attr('required', 'required');
-
                 $('#separationForm').removeClass('was-validated');
 
                 var $header = $('#separationModalHeader');
                 var $submitBtn = $('#btnSubmitSeparation');
+                var $clearBtn = $('#btnClearSeparation');
 
                 if (hasSep) {
+                    // Record EXISTS with separation date: Show Clear button and populate current values
+                    $clearBtn.show();
                     $header.removeClass('bg-danger text-white').addClass('bg-warning text-dark');
                     $('#separationModalTitle').html('<i class="fas fa-calendar-alt mr-2"></i>Manage Separation Details');
                     $submitBtn.removeClass('btn-danger').addClass('btn-warning').text('Update Separation');
+
+                    $('#separationDate').val(sepDate || '').attr('required', 'required');
+                    $('#separationReason').val(sepReason || '').attr('required', 'required');
+                    $('#separationRemarks').val(sepRemarks || '').attr('required', 'required');
                 } else {
+                    // Record DOES NOT have separation date: Hide Clear button and start with empty fields
+                    $clearBtn.hide();
                     $header.removeClass('bg-warning text-dark').addClass('bg-danger text-white');
                     $('#separationModalTitle').html('<i class="fas fa-user-slash mr-2"></i>Set Employee Separation');
                     $submitBtn.removeClass('btn-warning').addClass('btn-danger').text('Proceed to Separate');
+
+                    $('#separationDate').val('').attr('required', 'required');
+                    $('#separationReason').val('').attr('required', 'required');
+                    $('#separationRemarks').val('').attr('required', 'required');
                 }
 
                 $('#separationModal').modal('show');
+            });
+
+            // Handle Clear Separation Action (Forces fresh input for reason/remarks)
+            $('#btnClearSeparation').on('click', function() {
+                // 1. Clear date input and remove its required attribute
+                $('#separationDate').val('').removeAttr('required');
+
+                // 2. Clear out existing reason and remarks, forcing fresh entry
+                $('#separationReason').val('').attr('placeholder', 'Enter reason for restoring active status...').attr('required', 'required');
+                $('#separationRemarks').val('').attr('placeholder', 'Enter remarks explaining clearance...').attr('required', 'required');
+
+                var empName = $('#separationEmployeeName').val();
+
+                Swal.fire({
+                    title: 'Clear Separation Record?',
+                    html: 'Clearing separation for <strong>' + empName + '</strong> will restore active status.<br/><br/><small class="text-danger">Please enter a new <strong>Reason</strong> and <strong>Remarks</strong> in the modal fields to confirm this clearance action.</small>',
+                    icon: 'warning',
+                    confirmButtonColor: '#28a745',
+                    confirmButtonText: 'I understand, let me enter details'
+                });
             });
 
             // Handle Separation Form AJAX Submission with SweetAlert2

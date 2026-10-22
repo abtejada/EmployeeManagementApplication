@@ -2,9 +2,11 @@
 using EmployeeManagementApp.Models.Entities;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authorization;
 
 namespace EmployeeManagementApp.Controllers
 {
+    [Authorize]
     public class EmployeeController : Controller
     {
         private readonly PMMContext _context;
@@ -138,9 +140,10 @@ namespace EmployeeManagementApp.Controllers
         }
 
         [HttpPost]
-        [Route("Employee/UpdateProfile")] // Or just [HttpPost] depending on your routing setup
+        [Route("Employee/UpdateProfile")]
         public async Task<IActionResult> UpdateProfile([FromForm] EmployeeUpdateViewModel model)
         {
+            using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
                 if (!int.TryParse(model.EmployeeCode, out int hrisId))
@@ -156,23 +159,102 @@ namespace EmployeeManagementApp.Controllers
                     return Json(new { success = false, message = "Employee record not found." });
                 }
 
-                // Update profile fields
-                personnel.Prefix = model.Prefix;
-                personnel.GivenName = model.GivenName;
-                personnel.MiddleName = model.MiddleName;
-                personnel.Surname = model.Surname;
-                personnel.ExtensionName = model.ExtensionName;
-                personnel.Suffix = model.Suffix; // Save Suffix separately
+                string currentUserName = User.Identity?.Name ?? "System";
+                var changes = new List<string>();
 
+                // Compare and track each field
+                if ((personnel.Prefix ?? string.Empty) != (model.Prefix ?? string.Empty))
+                {
+                    changes.Add($"Prefix from '{personnel.Prefix}' to '{model.Prefix}'");
+                    personnel.Prefix = model.Prefix;
+                }
+
+                if ((personnel.GivenName ?? string.Empty) != (model.GivenName ?? string.Empty))
+                {
+                    changes.Add($"Given Name from '{personnel.GivenName}' to '{model.GivenName}'");
+                    personnel.GivenName = model.GivenName;
+                }
+
+                if ((personnel.MiddleName ?? string.Empty) != (model.MiddleName ?? string.Empty))
+                {
+                    changes.Add($"Middle Name from '{personnel.MiddleName}' to '{model.MiddleName}'");
+                    personnel.MiddleName = model.MiddleName;
+                }
+
+                if ((personnel.Surname ?? string.Empty) != (model.Surname ?? string.Empty))
+                {
+                    changes.Add($"Surname from '{personnel.Surname}' to '{model.Surname}'");
+                    personnel.Surname = model.Surname;
+                }
+
+                if ((personnel.ExtensionName ?? string.Empty) != (model.ExtensionName ?? string.Empty))
+                {
+                    changes.Add($"Extension Name from '{personnel.ExtensionName}' to '{model.ExtensionName}'");
+                    personnel.ExtensionName = model.ExtensionName;
+                }
+
+                if ((personnel.Suffix ?? string.Empty) != (model.Suffix ?? string.Empty))
+                {
+                    changes.Add($"Suffix from '{personnel.Suffix}' to '{model.Suffix}'");
+                    personnel.Suffix = model.Suffix;
+                }
+
+                // If no fields were modified, return early
+                if (!changes.Any())
+                {
+                    return Json(new { success = true, message = "No changes detected in profile details." });
+                }
+
+                // Consolidate all changes into a formatted string with line breaks and color styling
+                string formattedChanges = string.Join(",<br />", changes.Select(c =>
+                    // Assuming 'c' is built as "FieldName from 'Old' to 'New'"
+                    // We can replace the quotes with colored spans
+                    c.Replace("from '", "from '<span class=\"text-danger\">").Replace("' to '", "</span>' to '<span class=\"text-success\">").Replace("'", "</span>'")
+                ));
+
+                string consolidatedDescription = "Updated " + formattedChanges + ".";
+                // Insert exactly ONE audit log record
+                var auditLog = new EmployeeProfileAuditLog
+                {
+                    HrisId = hrisId,
+                    EmployeeId = personnel.EmployeeId ?? model.EmployeeCode,
+                    Description = consolidatedDescription,
+                    ModifiedBy = currentUserName,
+                    UpdatedAt = DateTime.Now
+                };
+
+                _context.EmployeeProfileAuditLogs.Add(auditLog);
                 await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
 
-                return Json(new { success = true, message = "Employee profile updated successfully." });
+                return Json(new { success = true, message = "Profile updated successfully and recorded in audit trail." });
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 return Json(new { success = false, message = ex.Message });
             }
         }
+
+        [HttpGet]
+        [Route("Employee/AuditHistory")]
+        public async Task<IActionResult> AuditHistory()
+        {
+            var logs = await _context.EmployeeProfileAuditLogs
+                .OrderByDescending(l => l.UpdatedAt)
+                .Select(l => new EmployeeProfileAuditLogViewModel
+                {
+                    AuditId = l.AuditId,
+                    EmployeeId = l.EmployeeId,
+                    Description = l.Description, // Updated to map the single consolidated description
+                    ModifiedBy = l.ModifiedBy,
+                    UpdatedAt = l.UpdatedAt
+                })
+                .ToListAsync();
+
+            return View("ProfileAuditHistory", logs);
+        }
+
 
         [HttpPost]
         [Route("Employee/UpdateSeparation")]
@@ -187,9 +269,11 @@ namespace EmployeeManagementApp.Controllers
                 }
 
                 DateTime? sqlSeparationDate = model.SeparationDate?.ToDateTime(TimeOnly.MinValue);
+
+                // This automatically reads the formatted name from the authentication cookie cookie claims!
                 string currentUserName = User.Identity?.Name ?? "System";
 
-                // Validate that Reason and Remarks are provided regardless of whether setting or clearing separation
+                // Validate required fields
                 if (string.IsNullOrWhiteSpace(model.SeparationReason))
                 {
                     return Json(new { success = false, message = "Separation reason is required." });
@@ -200,10 +284,9 @@ namespace EmployeeManagementApp.Controllers
                     return Json(new { success = false, message = "Separation remarks are required." });
                 }
 
-                // 1. If Clearing Separation (Restoring Active Status)
+                // If clearing separation (Restoring active status)
                 if (!sqlSeparationDate.HasValue)
                 {
-                    // Reset lookup fields in active occupation details
                     var occupationDetail = await _context.TimekeepingOccupationDetails
                         .FirstOrDefaultAsync(o => o.HrisId == hrisId);
 
@@ -214,14 +297,14 @@ namespace EmployeeManagementApp.Controllers
                         occupationDetail.SeparationRemarks = null;
                     }
 
-                    // Record clearance audit trail using user's inputted reason & remarks
+                    // Records clearance log stamped with the logged-in user
                     var clearHistory = new EmployeeSeparationHistory
                     {
                         HrisId = hrisId,
                         SeparationDate = null,
-                        SeparationReason = $"Cleared / Restored ({model.SeparationReason})", // Prefixes with action state
-                        SeparationRemarks = model.SeparationRemarks,                         // User's custom remarks
-                        SeparatedBy = currentUserName,
+                        SeparationReason = $"Cleared / Restored ({model.SeparationReason})",
+                        SeparationRemarks = model.SeparationRemarks,
+                        SeparatedBy = currentUserName, // Captures "Full Name (Employee ID)"
                         CreatedAt = DateTime.Now
                     };
                     _context.EmployeeSeparationHistories.Add(clearHistory);
@@ -232,14 +315,14 @@ namespace EmployeeManagementApp.Controllers
                     return Json(new { success = true, message = "Separation cleared successfully. Employee status restored to active." });
                 }
 
-                // 2. If Setting / Updating Separation
+                // If setting/updating separation, assign the code block you provided:
                 var newHistory = new EmployeeSeparationHistory
                 {
                     HrisId = hrisId,
                     SeparationDate = DateOnly.FromDateTime(sqlSeparationDate.Value),
                     SeparationReason = model.SeparationReason,
                     SeparationRemarks = model.SeparationRemarks,
-                    SeparatedBy = currentUserName,
+                    SeparatedBy = currentUserName, // Automatically logs "Full Name (Employee ID)"
                     CreatedAt = DateTime.Now
                 };
                 _context.EmployeeSeparationHistories.Add(newHistory);

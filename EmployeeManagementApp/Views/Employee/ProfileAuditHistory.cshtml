@@ -1,0 +1,77 @@
+﻿@model IEnumerable<EmployeeManagementApp.Models.EmployeeProfileAuditLogViewModel>
+
+@{
+    ViewData["Title"] = "Profile Update Audit Trail";
+}
+
+<div class="content-header">
+    <div class="container-fluid">
+        <h1 class="m-0">Profile Update Audit Logs</h1>
+    </div>
+</div>
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="card card-primary card-outline">
+            <div class="card-body">
+
+                <div class="table-responsive">
+                    <table id="profileAuditTable" class="table table-bordered table-striped" style="width:100%">
+                        <thead class="bg-light text-dark text-center font-weight-bold">
+                            <tr>
+                                <th style="width: 80px;">Log ID</th>
+                                <th style="width: 130px;">Employee ID</th>
+                                <th>Change Description</th>
+                                <th style="width: 200px;">Modified By</th>
+                                <th style="width: 160px;">Timestamp</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (Model != null && Model.Any())
+                            {
+                                @foreach (var log in Model)
+                                {
+                                    <tr>
+                                        <td class="text-center">@log.AuditId</td>
+                                        <td class="text-center">@log.EmployeeId</td>
+                                        <!-- Use Html.Raw to render the <br /> and color spans -->
+                                        <td>@Html.Raw(log.Description)</td>
+                                        <td>@log.ModifiedBy</td>
+                                        <td class="text-center">@log.UpdatedAt.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted py-4">
+                                        <i class="fas fa-info-circle fa-2x mb-2 d-block"></i>
+                                        No profile edit audit records found.
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            $('#profileAuditTable').DataTable({
+                "responsive": true,
+                "autoWidth": false,
+                "paging": true,
+                "pageLength": 10,
+                "lengthChange": true,
+                "searching": true,
+                "info": true,
+                "order": [[0, "desc"]]
+            });
+        });
+    </script>
+}

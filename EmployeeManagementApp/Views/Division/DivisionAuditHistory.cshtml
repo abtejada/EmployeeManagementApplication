@@ -1,0 +1,78 @@
+﻿@model IEnumerable<EmployeeManagementApp.Models.DivisionAuditLogViewModel>
+
+@{
+    ViewData["Title"] = "Division Update Audit Trail";
+}
+
+<div class="content-header">
+    <div class="container-fluid">
+        <h1 class="m-0">Division Update Audit Logs</h1>
+    </div>
+</div>
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="card card-primary card-outline">
+            <div class="card-body">
+
+                <div class="table-responsive">
+                    <table id="divisionAuditTable" class="table table-bordered table-striped" style="width:100%">
+                        <thead class="bg-light text-dark text-center font-weight-bold">
+                            <tr>
+                                <th>Log ID</th>
+                                <th>Division ID</th>
+                                <th>Division Name</th>
+                                <th>Change Description</th>
+                                <th>Modified By</th>
+                                <th>Timestamp</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (Model != null && Model.Any())
+                            {
+                                @foreach (var log in Model)
+                                {
+                                    <tr>
+                                        <td class="text-center">@log.AuditId</td>
+                                        <td class="text-center">@log.DivisionId</td>
+                                        <td><strong>@log.DivisionName</strong></td>
+                                        <td>@Html.Raw(log.Description)</td>
+                                        <td>@log.ModifiedBy</td>
+                                        <td class="text-center">@log.UpdatedAt.ToString("yyyy-MM-dd HH:mm:ss")</td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <tr>
+                                    <td colspan="6" class="text-center text-muted py-4">
+                                        <i class="fas fa-info-circle fa-2x mb-2 d-block"></i>
+                                        No division edit audit records found.
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</section>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            $('#divisionAuditTable').DataTable({
+                "responsive": true,
+                "autoWidth": false,
+                "paging": true,
+                "pageLength": 10,
+                "lengthChange": true,
+                "searching": true,
+                "info": true,
+                "order": [[0, "desc"]]
+            });
+        });
+    </script>
+}
