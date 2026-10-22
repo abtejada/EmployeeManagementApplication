@@ -15,10 +15,13 @@ namespace EmployeeManagementApp.Models
         public int HrisId { get; set; }
 
         [Column("SeparationDate")]
-        public DateOnly? SeparationDate { get; set; } 
+        public DateOnly? SeparationDate { get; set; }
 
         [Column("SeparationReason")]
         public string? SeparationReason { get; set; }
+
+        [Column("SeparationRemarks")]
+        public string? SeparationRemarks { get; set; }
 
         [Column("SeparatedBy")]
         public string? SeparatedBy { get; set; }

@@ -1,0 +1,349 @@
+﻿@model IEnumerable<EmployeeManagementApp.Models.DivisionManagementViewModel>
+
+@{
+    ViewData["Title"] = "Division Organizational Structure";
+    var personnelList = ViewBag.PersonnelList as IEnumerable<SelectListItem> ?? new List<SelectListItem>();
+}
+
+<div class="content-header">
+    <div class="container-fluid">
+        <h1 class="m-0">Division Management</h1>
+    </div>
+</div>
+
+<section class="content">
+    <div class="container-fluid">
+        <div class="card card-primary card-outline">
+            <div class="card-header">
+                <h3 class="card-title">Division List</h3>
+                <div class="card-tools">
+                    <button type="button" class="btn btn-primary btn-sm" id="btnAddDivision">
+                        <i class="fas fa-plus mr-1"></i> Create New Division
+                    </button>
+                </div>
+            </div>
+            <div class="card-body">
+
+                <!-- Data Table handled by DataTables.net -->
+                <div class="table-responsive">
+                    <table id="divisionTable" class="table table-bordered table-striped" style="width:100%">
+                        <thead class="p-2 text-dark">
+                            <tr>
+                                <th>Division</th>          
+                                <th>Division Short Name</th>            
+                                <th>Superior Division ID</th>
+                                <th>Division Head</th>
+                                <th>Division Head Designation</th>
+                                <th>Division Alternate Head</th>
+                                <th>Division Alternate Head Designation</th>
+                                <th>Office Level</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (Model != null && Model.Any())
+                            {
+                                @foreach (var item in Model)
+                                {
+                                    <tr>
+                                        <td>@item.Name</td>                    
+                                        <td>@item.Sname</td>                    
+                                       
+                                        <td>@item.DivIdSuperior</td>
+                                        <td>@item.HeadName</td>
+                                        <td>@item.Designation</td>
+                                        <td>@item.AlternateHeadName</td>       
+                                        <td>@item.AlternateHeadDesignation</td> 
+                                        <td>@item.OfficeLevel</td>
+                                        <td>
+                                            <span class="badge @(item.Status == true ? "badge-success" : "badge-secondary")">
+                                                @(item.Status.HasValue ? (item.Status.Value ? "Active" : "Inactive") : "N/A")
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <button type="button" class="btn btn-sm btn-warning btn-edit"
+                                                    data-id="@item.Id"
+                                                    data-name="@item.Name"
+                                                    data-sname="@item.Sname"
+                                                    data-status="@item.Status"
+                                                    data-superior="@item.DivIdSuperior"
+                                                    data-head="@item.HeadHrisId"
+                                                    data-designation="@item.Designation"
+                                                    data-alt-head="@item.AlternateHead"
+                                                    data-alt-desig="@item.AlternateHeadDesignation"
+                                                    data-office-level="@item.OfficeLevel">
+                                                <i class="fas fa-edit"></i> Edit
+                                            </button>
+                                        </td>
+                                    </tr>
+                                }
+                            }
+                            else
+                            {
+                                <tr>
+                                    <td colspan="8" class="text-center text-muted py-5">
+                                        <i class="fas fa-info-circle fa-2x mb-2 d-block"></i>
+                                        No division records found.
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</section>
+
+<div class="modal fade" id="editDivisionModal" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog modal-lg" role="document">
+        <div class="modal-content">
+            <form id="divisionForm">
+                <div class="modal-header bg-warning" id="modalHeader">
+                    <h5 class="modal-title font-weight-bold" id="modalTitleHtml">
+                        <i class="fas fa-edit mr-2"></i>Edit Division Structure
+                    </h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="modalId" name="Id" />
+
+                    <div class="row">
+                        <div class="col-md-6 form-group">
+                            <label>Division Name</label>
+                            <input type="text" id="modalName" name="Name" class="form-control bg-light" readonly />
+                        </div>
+                        <div class="col-md-6 form-group">
+                            <label>Short Name</label>
+                            <input type="text" id="modalSname" name="Sname" class="form-control bg-light" readonly />
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 form-group">
+                            <label>Status <span class="text-danger">*</span></label>
+                            <select id="modalStatus" name="Status" class="form-control" required>
+                                <option value="">-- Select Status --</option>
+                                <option value="true">Active</option>
+                                <option value="false">Inactive</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 form-group">
+                            <label>Superior Division ID</label>
+                            <input type="number" id="modalSuperior" name="DivIdSuperior" class="form-control" />
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 form-group">
+                            <label>Division Head </span></label>
+                            <select id="modalHeadHrisId" name="HeadHrisId" class="form-control" style="width: 100%;">
+                                <option value="">-- Select Personnel Name --</option>
+                                @foreach (var p in personnelList)
+                                {
+                                    <option value="@p.Value">@p.Text</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-6 form-group">
+                            <label>Division Alternate Head</label>
+                            <select id="modalAlternateHead" name="AlternateHead" class="form-control" style="width: 100%;">
+                                <option value="">-- Select Alternate Personnel --</option>
+                                @foreach (var p in personnelList)
+                                {
+                                    <option value="@p.Value">@p.Text</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 form-group">
+                            <label>Division Head Designation</label>
+                            <input type="text" id="modalDesignation" name="Designation" class="form-control" />
+                        </div>
+                        <div class="col-md-6 form-group">
+                            <label>Alternate Head Designation</label>
+                            <input type="text" id="modalAltDesig" name="AlternateHeadDesignation" class="form-control" />
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 form-group">
+                            <label>Office Level</label>
+                            <input type="text" id="modalOfficeLevel" name="OfficeLevel" class="form-control" />
+                        </div>
+                    </div>
+
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-warning font-weight-bold" id="btnSubmitDivision">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // 1. Open Modal for Creating a New Division
+        $('#btnAddDivision').on('click', function() {
+            // Reset form fields
+            $('#divisionForm')[0].reset();
+            $('#modalId').val(''); // Empty ID indicates creation
+
+            // Unlock unique identifier fields for creation
+            $('#modalName').prop('readonly', false).removeClass('bg-light');
+            $('#modalSname').prop('readonly', false).removeClass('bg-light');
+
+            // Reset Select2 dropdowns
+            $('#modalHeadHrisId').val('').trigger('change');
+            $('#modalAlternateHead').val('').trigger('change');
+
+            // Update modal header styling for Create mode
+            $('#modalHeader')
+                .removeClass('bg-warning')
+                .addClass('bg-primary text-white');
+            $('#modalTitleHtml').html('<i class="fas fa-plus-circle mr-2"></i>Create New Division');
+            $('#btnSubmitDivision')
+                .removeClass('btn-warning')
+                .addClass('btn-primary')
+                .text('Save New Division');
+
+            // Set default status to active
+            $('#modalStatus').val('true');
+
+            // Show modal
+            $('#editDivisionModal').modal('show');
+        });
+
+        // 2. Open Modal for Editing an Existing Division
+        $(document).on('click', '.btn-edit', function(e) {
+            e.preventDefault();
+
+            var $btn = $(this);
+            var id = $btn.data('id');
+            var name = $btn.data('name');
+            var sname = $btn.data('sname');
+            var status = $btn.data('status');
+            var superior = $btn.data('superior');
+            var head = $btn.data('head');
+            var designation = $btn.data('designation');
+            var altHead = $btn.data('alt-head');
+            var altDesig = $btn.data('alt-desig');
+            var officeLevel = $btn.data('office-level');
+
+            // Reset validation/form
+            $('#divisionForm')[0].reset();
+
+            // Lock unique identifiers for Edit mode (since Name & Sname are unique keys)
+            $('#modalId').val(id);
+            $('#modalName').val(name).prop('readonly', true).addClass('bg-light');
+            $('#modalSname').val(sname).prop('readonly', true).addClass('bg-light');
+
+            // Populate other fields
+            $('#modalStatus').val(status !== undefined && status !== "" ? status.toString() : "true");
+            $('#modalSuperior').val(superior);
+            $('#modalDesignation').val(designation);
+            $('#modalAltDesig').val(altDesig);
+            $('#modalOfficeLevel').val(officeLevel);
+
+            // Populate Select2 dropdowns and trigger change
+            $('#modalHeadHrisId').val(head).trigger('change');
+            $('#modalAlternateHead').val(altHead).trigger('change');
+
+            // Update modal header styling for Edit mode
+            $('#modalHeader')
+                .removeClass('bg-primary text-white')
+                .addClass('bg-warning');
+            $('#modalTitleHtml').html('<i class="fas fa-edit mr-2"></i>Edit Division Structure');
+            $('#btnSubmitDivision')
+                .removeClass('btn-primary')
+                .addClass('btn-warning')
+                .text('Save Changes');
+
+            // Show modal
+            $('#editDivisionModal').modal('show');
+        });
+
+        // 3. Document Ready Initialization (DataTable, Select2, and Dynamic Form Submission)
+        $(document).ready(function() {
+            if ($('#divisionTable').length) {
+                $('#divisionTable').DataTable({
+                    "responsive": true,
+                    "autoWidth": false,
+                    "paging": true,
+                    "pageLength": 10,
+                    "searching": true,
+                    "info": true,
+                    "order": [[0, "asc"]]
+                });
+            }
+
+            if ($.fn.select2) {
+                $('.select2').each(function() {
+                    $(this).select2({
+                        theme: 'bootstrap4',
+                        width: '100%',
+                        dropdownParent: $('#editDivisionModal')
+                    });
+                });
+            }
+
+            // Handle AJAX form submission for BOTH Create and Edit
+            $('#divisionForm').on('submit', function(e) {
+                e.preventDefault();
+                var form = this;
+                var isEdit = $('#modalId').val() !== "";
+                var actionUrl = isEdit ? '/Division/Update' : '/Division/Create';
+
+                Swal.fire({
+                    title: isEdit ? 'Save Changes?' : 'Create Division?',
+                    text: isEdit ? "Are you sure you want to update this division's structure?" : "Are you sure you want to create this new division?",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: isEdit ? '#ffc107' : '#007bff',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: isEdit ? 'Yes, save changes!' : 'Yes, create division!'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        var formData = $(form).serialize();
+                        var $submitBtn = $('#btnSubmitDivision').prop('disabled', true);
+
+                        $.ajax({
+                            url: actionUrl,
+                            type: 'POST',
+                            data: formData,
+                            success: function(response) {
+                                $submitBtn.prop('disabled', false);
+                                if (response.success) {
+                                    $('#editDivisionModal').modal('hide');
+                                    Swal.fire({
+                                        title: 'Success!',
+                                        text: response.message,
+                                        icon: 'success',
+                                        timer: 1500,
+                                        showConfirmButton: false
+                                    }).then(() => {
+                                        location.reload();
+                                    });
+                                } else {
+                                    Swal.fire('Error!', response.message, 'error');
+                                }
+                            },
+                            error: function(xhr, status, error) {
+                                $submitBtn.prop('disabled', false);
+                                Swal.fire('AJAX Error!', (xhr.responseText || error), 'error');
+                            }
+                        });
+                    }
+                });
+            });
+        });
+    </script>
+}

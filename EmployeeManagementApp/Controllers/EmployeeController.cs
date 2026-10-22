@@ -37,7 +37,7 @@ namespace EmployeeManagementApp.Controllers
 
             var personnelList = await personnelQuery.ToListAsync();
             var occupationList = await occupationQuery.ToListAsync();
-            var divisionList = await divisionQuery.ToListAsync();     
+            var divisionList = await divisionQuery.ToListAsync();
 
             DateOnly today = DateOnly.FromDateTime(DateTime.Today);
 
@@ -45,12 +45,15 @@ namespace EmployeeManagementApp.Controllers
             {
                 var occ = occupationList.FirstOrDefault(o => o.HrisId.ToString().Trim() == p.HrisId.ToString().Trim());
 
+                // Find division from TimekeepingDivisions where division.Id matches occupation.Division
                 var div = (occ != null && occ.Division.HasValue)
                     ? divisionList.FirstOrDefault(d => d.Id == occ.Division.Value)
                     : null;
 
-                string hrisIdStr = p.HrisId.ToString().Trim() ?? "";
-                string deptName = div != null ? (div.Sname ?? "Unassigned") : "Unassigned";
+                string hrisIdStr = p.HrisId.ToString().Trim();
+
+                // Division short name (Sname) mapping
+                string divShortName = (div != null && !string.IsNullOrEmpty(div.Sname)) ? div.Sname : "Unassigned";
 
                 bool hasSeparationValue = occ != null && occ.SeparationDate.HasValue;
                 bool isCurrentlySeparated = false;
@@ -69,13 +72,24 @@ namespace EmployeeManagementApp.Controllers
                 {
                     EmployeeId = p.EmployeeId ?? "N/A",
                     EmployeeCode = hrisIdStr,
-                    FullName = ((p.GivenName ?? "") + " " + (p.Surname ?? "")).Trim(),
-                    Department = deptName,
-                    DivisionShortName = deptName,
+
+                    // Name components & Prefix/Suffix mapping
+                    Prefix = p.Prefix,
+                    GivenName = p.GivenName ?? "",
+                    MiddleName = p.MiddleName,
+                    Surname = p.Surname ?? "",
+                    ExtensionName = p.ExtensionName,
+                    Suffix = p.Suffix,
+
+                    Department = divShortName,
+                    DivisionShortName = divShortName, // Mapped from TimekeepingDivisions.Sname
                     Position = occ != null && occ.Position != null ? occ.Position.ToString() : "Unassigned",
                     IsActive = isActive,
+
+                    // Separation details & remarks mapping
                     SeparationDateFormatted = sepDateFormatted,
                     SeparationReason = occ?.SeparationReason ?? "",
+                    SeparationRemarks = occ?.SeparationRemarks ?? "",
                     HasExistingSeparation = hasSeparationValue
                 };
             }).ToList();
@@ -83,128 +97,173 @@ namespace EmployeeManagementApp.Controllers
             return View(employeeDirectory);
         }
 
+        [HttpGet]
+        public async Task<IActionResult> SeparationHistory()
+        {
+            var historyList = await _context.EmployeeSeparationHistories.ToListAsync();
+            var personnelList = await _context.PmsPersonnelInformations.ToListAsync();
+            var occupationList = await _context.TimekeepingOccupationDetails.ToListAsync();
+            var divisionList = await _context.TimekeepingDivisions.ToListAsync();
+
+            var viewModelList = historyList.Select(h =>
+            {
+                var p = personnelList.FirstOrDefault(x => x.HrisId == h.HrisId);
+                var occ = occupationList.FirstOrDefault(x => x.HrisId == h.HrisId);
+                var div = (occ != null && occ.Division.HasValue)
+                    ? divisionList.FirstOrDefault(d => d.Id == occ.Division.Value)
+                    : null;
+
+                string fullName = p != null
+                    ? $"{p.Prefix ?? ""} {p.GivenName ?? ""} {p.MiddleName ?? ""} {p.Surname ?? ""} {p.ExtensionName ?? ""}".Trim().Replace("  ", " ")
+                    : "N/A";
+
+                string divName = div != null && !string.IsNullOrEmpty(div.Sname) ? div.Sname : "Unassigned";
+
+                return new EmployeeSeparationHistoryViewModel
+                {
+                    SeparationLogId = h.SeparationLogId,
+                    EmployeeId = p?.EmployeeId ?? "N/A",
+                    FullName = fullName,
+                    Department = divName,
+                    Position = occ != null && occ.Position != null ? occ.Position.ToString() : "Unassigned",
+                    SeparationDate = h.SeparationDate,
+                    SeparationReason = h.SeparationReason,
+                    SeparationRemarks = h.SeparationRemarks,
+                    SeparatedBy = h.SeparatedBy ?? "System",
+                    CreatedAt = h.CreatedAt
+                };
+            }).OrderByDescending(x => x.CreatedAt).ToList();
+
+            return View(viewModelList);
+        }
+
         [HttpPost]
-        public async Task<IActionResult> UpdateSeparation(string employeeCode, DateOnly? separationDate, string? separationReason)
+        [Route("Employee/UpdateProfile")] // Or just [HttpPost] depending on your routing setup
+        public async Task<IActionResult> UpdateProfile([FromForm] EmployeeUpdateViewModel model)
+        {
+            try
+            {
+                if (!int.TryParse(model.EmployeeCode, out int hrisId))
+                {
+                    return Json(new { success = false, message = "Invalid Employee Code format." });
+                }
+
+                var personnel = await _context.PmsPersonnelInformations
+                    .FirstOrDefaultAsync(p => p.HrisId == hrisId);
+
+                if (personnel == null)
+                {
+                    return Json(new { success = false, message = "Employee record not found." });
+                }
+
+                // Update profile fields
+                personnel.Prefix = model.Prefix;
+                personnel.GivenName = model.GivenName;
+                personnel.MiddleName = model.MiddleName;
+                personnel.Surname = model.Surname;
+                personnel.ExtensionName = model.ExtensionName;
+                personnel.Suffix = model.Suffix; // Save Suffix separately
+
+                await _context.SaveChangesAsync();
+
+                return Json(new { success = true, message = "Employee profile updated successfully." });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        [HttpPost]
+        [Route("Employee/UpdateSeparation")]
+        public async Task<IActionResult> UpdateSeparation([FromForm] EmployeeUpdateViewModel model)
         {
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
-                if (int.TryParse(employeeCode, out int hrisId))
+                if (!int.TryParse(model.EmployeeCode, out int hrisId))
                 {
+                    return Json(new { success = false, message = "Invalid Employee Code format." });
+                }
+
+                DateTime? sqlSeparationDate = model.SeparationDate?.ToDateTime(TimeOnly.MinValue);
+                string currentUserName = User.Identity?.Name ?? "System";
+
+                // Validate that Reason and Remarks are provided regardless of whether setting or clearing separation
+                if (string.IsNullOrWhiteSpace(model.SeparationReason))
+                {
+                    return Json(new { success = false, message = "Separation reason is required." });
+                }
+
+                if (string.IsNullOrWhiteSpace(model.SeparationRemarks))
+                {
+                    return Json(new { success = false, message = "Separation remarks are required." });
+                }
+
+                // 1. If Clearing Separation (Restoring Active Status)
+                if (!sqlSeparationDate.HasValue)
+                {
+                    // Reset lookup fields in active occupation details
                     var occupationDetail = await _context.TimekeepingOccupationDetails
                         .FirstOrDefaultAsync(o => o.HrisId == hrisId);
 
-                    DateTime? convertedDate = separationDate.HasValue ? separationDate.Value.ToDateTime(TimeOnly.MinValue) : null;
-
                     if (occupationDetail != null)
                     {
-                        occupationDetail.SeparationDate = convertedDate;
-                        occupationDetail.SeparationReason = separationDate.HasValue ? separationReason : null;
-                        _context.Entry(occupationDetail).State = EntityState.Modified;
-                    }
-                    else if (separationDate.HasValue)
-                    {
-                        var newOccupation = new TimekeepingOccupationDetail
-                        {
-                            HrisId = hrisId,
-                            SeparationDate = convertedDate.Value,
-                            SeparationReason = separationReason
-                        };
-                        _context.TimekeepingOccupationDetails.Add(newOccupation);
+                        occupationDetail.SeparationDate = null;
+                        occupationDetail.SeparationReason = null;
+                        occupationDetail.SeparationRemarks = null;
                     }
 
-                    string finalReason = !string.IsNullOrWhiteSpace(separationReason)
-                        ? separationReason
-                        : (separationDate.HasValue ? "Separation date updated" : "Separation date removed / Restored to active");
-
-                    var newHistory = new EmployeeSeparationHistory
+                    // Record clearance audit trail using user's inputted reason & remarks
+                    var clearHistory = new EmployeeSeparationHistory
                     {
                         HrisId = hrisId,
-                        SeparationDate = separationDate,       
-                        SeparationReason = finalReason,
-                        SeparatedBy = User.Identity?.Name ?? "System",
+                        SeparationDate = null,
+                        SeparationReason = $"Cleared / Restored ({model.SeparationReason})", // Prefixes with action state
+                        SeparationRemarks = model.SeparationRemarks,                         // User's custom remarks
+                        SeparatedBy = currentUserName,
                         CreatedAt = DateTime.Now
                     };
-                    _context.EmployeeSeparationHistories.Add(newHistory);
+                    _context.EmployeeSeparationHistories.Add(clearHistory);
 
                     await _context.SaveChangesAsync();
                     await transaction.CommitAsync();
 
-                    return Json(new { success = true });
+                    return Json(new { success = true, message = "Separation cleared successfully. Employee status restored to active." });
                 }
-                else
+
+                // 2. If Setting / Updating Separation
+                var newHistory = new EmployeeSeparationHistory
                 {
-                    return Json(new { success = false, message = "Invalid Employee Code format." });
+                    HrisId = hrisId,
+                    SeparationDate = DateOnly.FromDateTime(sqlSeparationDate.Value),
+                    SeparationReason = model.SeparationReason,
+                    SeparationRemarks = model.SeparationRemarks,
+                    SeparatedBy = currentUserName,
+                    CreatedAt = DateTime.Now
+                };
+                _context.EmployeeSeparationHistories.Add(newHistory);
+
+                var occDetail = await _context.TimekeepingOccupationDetails
+                    .FirstOrDefaultAsync(o => o.HrisId == hrisId);
+
+                if (occDetail != null)
+                {
+                    occDetail.SeparationDate = sqlSeparationDate;
+                    occDetail.SeparationReason = model.SeparationReason;
+                    occDetail.SeparationRemarks = model.SeparationRemarks;
                 }
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                return Json(new { success = true, message = "Employee separation details updated successfully." });
             }
             catch (Exception ex)
             {
                 await transaction.RollbackAsync();
-                return Json(new { success = false, message = "Database Error: " + (ex.InnerException?.Message ?? ex.Message) });
+                return Json(new { success = false, message = ex.Message });
             }
-        }
-
-        [HttpGet]
-        public async Task<IActionResult> SeparationHistory()
-        {
-            var baseQuery = from h in _context.EmployeeSeparationHistories
-                            join p in _context.PmsPersonnelInformations on h.HrisId equals p.HrisId
-                            select new
-                            {
-                                h.SeparationLogId,
-                                h.HrisId,
-                                EmployeeId = p.EmployeeId ?? "",
-                                GivenName = p.GivenName ?? "",
-                                Surname = p.Surname ?? "",
-                                h.SeparationDate,
-                                h.SeparationReason,
-                                h.SeparatedBy,
-                                h.CreatedAt
-                            };
-
-            var historyData = await baseQuery
-                .OrderByDescending(h => h.SeparationLogId)
-                .ToListAsync();
-
-            var hrisIds = historyData.Select(x => x.HrisId).ToList();
-            var occupations = await _context.TimekeepingOccupationDetails
-                .Where(o => hrisIds.Contains(o.HrisId))
-                .ToListAsync();
-
-            var divisions = await _context.TimekeepingDivisions.ToListAsync();
-
-            var occupationDict = occupations
-                .GroupBy(o => o.HrisId)
-                .ToDictionary(g => g.Key, g => g.FirstOrDefault());
-
-            var divisionDict = divisions.ToDictionary(d => d.Id, d => d.Sname);
-
-            var historyItems = historyData.Select(x =>
-            {
-                occupationDict.TryGetValue(x.HrisId, out var occ);
-
-                string deptName = "Unassigned";
-                if (occ != null && occ.Division.HasValue && divisionDict.TryGetValue(occ.Division.Value, out var sname))
-                {
-                    deptName = sname ?? "Unassigned";
-                }
-
-                return new EmployeeSeparationHistoryViewModel
-                {
-                    SeparationLogId = x.SeparationLogId,
-                    EmployeeId = string.IsNullOrEmpty(x.EmployeeId) ? "N/A" : x.EmployeeId,
-                    EmployeeCode = x.HrisId.ToString(),
-                    FullName = (x.GivenName + " " + x.Surname).Trim(),
-                    Department = deptName,
-                    Position = occ != null && occ.Position != null ? occ.Position.ToString() : "Unassigned",
-                    SeparationDate = x.SeparationDate,
-                    SeparationReason = x.SeparationReason,
-                    SeparatedBy = x.SeparatedBy ?? "System",
-                    CreatedAt = x.CreatedAt
-                };
-            }).ToList();
-
-            return View(historyItems);
         }
     }
 }

@@ -1069,139 +1069,70 @@ public partial class PMMContext : DbContext
         modelBuilder.Entity<PmsPersonnelInformation>(entity =>
         {
             entity.HasKey(e => e.HrisId);
-
             entity.ToTable("PMS_personnel_information");
 
             entity.Property(e => e.HrisId).HasColumnName("hris_id");
+            entity.Property(e => e.EmployeeId).HasColumnName("employee_id").HasMaxLength(12);
+            entity.Property(e => e.Prefix).HasColumnName("prefix").HasMaxLength(50);
+            entity.Property(e => e.Suffix).HasColumnName("suffix").HasMaxLength(50);
+            entity.Property(e => e.Surname).HasColumnName("surname").HasMaxLength(50);
+            entity.Property(e => e.GivenName).HasColumnName("given_name").HasMaxLength(50);
+            entity.Property(e => e.MiddleName).HasColumnName("middle_name").HasMaxLength(50);
+            entity.Property(e => e.ExtensionName).HasColumnName("extension_name").HasMaxLength(10);
             entity.Property(e => e.BirthDate).HasColumnName("birth_date");
-            entity.Property(e => e.BirthPlace)
-                .HasMaxLength(50)
-                .HasColumnName("birth_place");
-            entity.Property(e => e.BloodType)
-                .HasMaxLength(3)
-                .HasColumnName("blood_type");
-            entity.Property(e => e.CitizenshipBirth).HasColumnName("citizenship_birth");
-            entity.Property(e => e.CitizenshipCountry)
-                .HasMaxLength(50)
-                .HasColumnName("citizenship_country");
+            entity.Property(e => e.BirthPlace).HasColumnName("birth_place").HasMaxLength(100);
+            entity.Property(e => e.Sex).HasColumnName("sex").HasMaxLength(10);
+            entity.Property(e => e.CivilStatus).HasColumnName("civil_status").HasMaxLength(20);
+            entity.Property(e => e.Height).HasColumnName("height").HasColumnType("decimal(4, 2)");
+            entity.Property(e => e.Weight).HasColumnName("weight").HasColumnType("decimal(5, 2)");
+            entity.Property(e => e.BloodType).HasColumnName("blood_type").HasMaxLength(5);
+
+            // Government IDs
+            entity.Property(e => e.GsisId).HasColumnName("gsis_id").HasMaxLength(50);
+            entity.Property(e => e.PagibigId).HasColumnName("pagibig_id").HasMaxLength(50);
+            entity.Property(e => e.PhilhealthId).HasColumnName("philhealth_id").HasMaxLength(50);
+            entity.Property(e => e.SssId).HasColumnName("sss_id").HasMaxLength(50);
+            entity.Property(e => e.TinId).HasColumnName("tin_id").HasMaxLength(50);
+
+            // Citizenship
             entity.Property(e => e.CitizenshipDual).HasColumnName("citizenship_dual");
-            entity.Property(e => e.CivilStatus)
-                .HasMaxLength(20)
-                .HasColumnName("civil_status");
-            entity.Property(e => e.ContactNumber)
-                .HasMaxLength(11)
-                .HasColumnName("contact_number");
-            entity.Property(e => e.Email)
-                .HasMaxLength(100)
-                .HasColumnName("email");
-            entity.Property(e => e.EmployeeId)
-                .HasMaxLength(12)
-                .HasColumnName("employee_id");
-            entity.Property(e => e.ExtensionName)
-                .HasMaxLength(10)
-                .HasColumnName("extension_name");
-            entity.Property(e => e.GivenName)
-                .HasMaxLength(50)
-                .HasColumnName("given_name");
-            entity.Property(e => e.GsisId)
-                .HasMaxLength(100)
-                .HasColumnName("gsis_id");
-            entity.Property(e => e.Height)
-                .HasColumnType("decimal(4, 2)")
-                .HasColumnName("height");
-            entity.Property(e => e.IceBrgy)
-                .HasMaxLength(100)
-                .HasColumnName("Ice_brgy");
-            entity.Property(e => e.IceCtyMnicplty)
-                .HasMaxLength(100)
-                .HasColumnName("Ice_CtyMnicplty");
-            entity.Property(e => e.IceNumber)
-                .HasMaxLength(100)
-                .HasColumnName("Ice_number");
-            entity.Property(e => e.IceProvince)
-                .HasMaxLength(100)
-                .HasColumnName("Ice_province");
-            entity.Property(e => e.IceRegion)
-                .HasMaxLength(100)
-                .HasColumnName("Ice_region");
-            entity.Property(e => e.IceStreet)
-                .HasMaxLength(100)
-                .HasColumnName("Ice_street");
-            entity.Property(e => e.IceZipcode).HasColumnName("Ice_zipcode");
-            entity.Property(e => e.MiddleName)
-                .HasMaxLength(20)
-                .HasColumnName("middle_name");
-            entity.Property(e => e.Mobilenum)
-                .HasMaxLength(11)
-                .HasColumnName("mobilenum");
-            entity.Property(e => e.NamePerson)
-                .HasMaxLength(100)
-                .HasColumnName("name_person");
-            entity.Property(e => e.PagibigId)
-                .HasMaxLength(100)
-                .HasColumnName("pagibig_id");
-            entity.Property(e => e.PermanentBrgy)
-                .HasMaxLength(100)
-                .HasColumnName("permanent_brgy");
-            entity.Property(e => e.PermanentCtyMnicplty)
-                .HasMaxLength(100)
-                .HasColumnName("permanent_CtyMnicplty");
-            entity.Property(e => e.PermanentNumber)
-                .HasMaxLength(100)
-                .HasColumnName("permanent_number");
-            entity.Property(e => e.PermanentProvince)
-                .HasMaxLength(100)
-                .HasColumnName("permanent_province");
-            entity.Property(e => e.PermanentRegion)
-                .HasMaxLength(100)
-                .HasColumnName("permanent_region");
-            entity.Property(e => e.PermanentStreet)
-                .HasMaxLength(100)
-                .HasColumnName("permanent_street");
-            entity.Property(e => e.PermanentZipcode).HasColumnName("permanent_zipcode");
-            entity.Property(e => e.PhilhealthId)
-                .HasMaxLength(100)
-                .HasColumnName("philhealth_id");
-            entity.Property(e => e.Relationship)
-                .HasMaxLength(20)
-                .HasColumnName("relationship");
-            entity.Property(e => e.ResidentialBrgy)
-                .HasMaxLength(100)
-                .HasColumnName("residential_brgy");
-            entity.Property(e => e.ResidentialCtyMnicplty)
-                .HasMaxLength(100)
-                .HasColumnName("residential_CtyMnicplty");
-            entity.Property(e => e.ResidentialNumber)
-                .HasMaxLength(100)
-                .HasColumnName("residential_number");
-            entity.Property(e => e.ResidentialProvince)
-                .HasMaxLength(100)
-                .HasColumnName("residential_province");
-            entity.Property(e => e.ResidentialRegion)
-                .HasMaxLength(100)
-                .HasColumnName("residential_region");
-            entity.Property(e => e.ResidentialStreet)
-                .HasMaxLength(100)
-                .HasColumnName("residential_street");
+            entity.Property(e => e.CitizenshipBirth).HasColumnName("citizenship_birth");
+            entity.Property(e => e.CitizenshipCountry).HasColumnName("citizenship_country").HasMaxLength(50);
+
+            // Residential Address
+            entity.Property(e => e.ResidentialRegion).HasColumnName("residential_region").HasMaxLength(100);
+            entity.Property(e => e.ResidentialProvince).HasColumnName("residential_province").HasMaxLength(100);
+            entity.Property(e => e.ResidentialCtyMnicplty).HasColumnName("residential_CtyMnicplty").HasMaxLength(100);
+            entity.Property(e => e.ResidentialBrgy).HasColumnName("residential_brgy").HasMaxLength(100);
+            entity.Property(e => e.ResidentialNumber).HasColumnName("residential_number").HasMaxLength(50);
+            entity.Property(e => e.ResidentialStreet).HasColumnName("residential_street").HasMaxLength(100);
             entity.Property(e => e.ResidentialZipcode).HasColumnName("residential_zipcode");
-            entity.Property(e => e.Sex)
-                .HasMaxLength(10)
-                .HasColumnName("sex");
-            entity.Property(e => e.SssId)
-                .HasMaxLength(100)
-                .HasColumnName("sss_id");
-            entity.Property(e => e.Surname)
-                .HasMaxLength(20)
-                .HasColumnName("surname");
-            entity.Property(e => e.Telephonenum)
-                .HasMaxLength(50)
-                .HasColumnName("telephonenum");
-            entity.Property(e => e.TinId)
-                .HasMaxLength(100)
-                .HasColumnName("tin_id");
-            entity.Property(e => e.Weight)
-                .HasColumnType("decimal(5, 2)")
-                .HasColumnName("weight");
+
+            // Permanent Address
+            entity.Property(e => e.PermanentRegion).HasColumnName("permanent_region").HasMaxLength(100);
+            entity.Property(e => e.PermanentProvince).HasColumnName("permanent_province").HasMaxLength(100);
+            entity.Property(e => e.PermanentCtyMnicplty).HasColumnName("permanent_CtyMnicplty").HasMaxLength(100);
+            entity.Property(e => e.PermanentBrgy).HasColumnName("permanent_brgy").HasMaxLength(100);
+            entity.Property(e => e.PermanentNumber).HasColumnName("permanent_number").HasMaxLength(50);
+            entity.Property(e => e.PermanentStreet).HasColumnName("permanent_street").HasMaxLength(100);
+            entity.Property(e => e.PermanentZipcode).HasColumnName("permanent_zipcode");
+
+            // Emergency Contact (ICE) - Notice the exact database column casing/names
+            entity.Property(e => e.NamePerson).HasColumnName("name_person").HasMaxLength(100);
+            entity.Property(e => e.ContactNumber).HasColumnName("contact_number").HasMaxLength(50);
+            entity.Property(e => e.Relationship).HasColumnName("relationship").HasMaxLength(50);
+            entity.Property(e => e.IceRegion).HasColumnName("Ice_region").HasMaxLength(100);
+            entity.Property(e => e.IceProvince).HasColumnName("Ice_province").HasMaxLength(100);
+            entity.Property(e => e.IceCtyMnicplty).HasColumnName("Ice_CtyMnicplty").HasMaxLength(100);
+            entity.Property(e => e.IceBrgy).HasColumnName("Ice_brgy").HasMaxLength(100);
+            entity.Property(e => e.IceNumber).HasColumnName("Ice_number").HasMaxLength(50);
+            entity.Property(e => e.IceStreet).HasColumnName("Ice_street").HasMaxLength(100);
+            entity.Property(e => e.IceZipcode).HasColumnName("Ice_zipcode");
+
+            // Contact Info
+            entity.Property(e => e.Telephonenum).HasColumnName("telephonenum").HasMaxLength(50);
+            entity.Property(e => e.Mobilenum).HasColumnName("mobilenum").HasMaxLength(50);
+            entity.Property(e => e.Email).HasColumnName("email").HasMaxLength(100);
         });
 
         modelBuilder.Entity<PmsPersonnelInterview>(entity =>
@@ -2525,6 +2456,9 @@ public partial class PMMContext : DbContext
             entity.Property(e => e.HrisId).HasColumnName("hris_id");
             entity.Property(e => e.SeparationDate).HasColumnName("separation_date");
             entity.Property(e => e.SeparationReason).HasColumnName("separation_reason");
+
+            // Map separation remarks column
+            entity.Property(e => e.SeparationRemarks).HasColumnName("separation_remarks");
         });
 
         modelBuilder.Entity<TimekeepingOfficialBusiness>(entity =>

@@ -17,7 +17,7 @@
 
                 <div class="table-responsive">
                     <table id="separationHistoryTable" class="table table-bordered table-striped" style="width:100%">
-                        <thead>
+                        <thead class="p-2 text-dark text-align-center font-weight-bold table-hover">
                             <tr>
                                 <th>Log ID</th>
                                 <th>Employee ID</th>
@@ -25,7 +25,8 @@
                                 <th>Division</th>
                                 <th>Position</th>
                                 <th>Separation Date</th>
-                                <th>Reason / Remarks</th>
+                                <th>Reason</th>
+                                <th>Remarks</th>
                                 <th>Separated By</th>
                                 <th>Created At</th>
                             </tr>
@@ -43,6 +44,7 @@
                                         <td>@item.Position</td>
                                         <td>@(item.SeparationDate.HasValue ? item.SeparationDate.Value.ToString("yyyy-MM-dd") : "—")</td>
                                         <td>@(string.IsNullOrEmpty(item.SeparationReason) ? "—" : item.SeparationReason)</td>
+                                        <td>@(string.IsNullOrEmpty(item.SeparationRemarks) ? "—" : item.SeparationRemarks)</td>
                                         <td>@item.SeparatedBy</td>
                                         <td>@item.CreatedAt.ToString("yyyy-MM-dd HH:mm")</td>
                                     </tr>
@@ -51,7 +53,7 @@
                             else
                             {
                                 <tr>
-                                    <td colspan="9" class="text-center text-muted py-4">
+                                    <td colspan="10" class="text-center text-muted py-4">
                                         <i class="fas fa-info-circle fa-2x mb-2 d-block"></i>
                                         No separation history records found.
                                     </td>
@@ -72,12 +74,12 @@
             $('#separationHistoryTable').DataTable({
                 "responsive": true,
                 "autoWidth": false,
-                "paging": true,          
-                "pageLength": 10,         
-                "lengthChange": true,        
-                "searching": true,           
-                "info": true,             
-                "order": [[0, "desc"]]         
+                "paging": true,
+                "pageLength": 10,
+                "lengthChange": true,
+                "searching": true,
+                "info": true,
+                "order": [[0, "desc"]]
             });
         });
     </script>

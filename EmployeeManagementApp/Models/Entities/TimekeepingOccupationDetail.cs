@@ -8,8 +8,8 @@ namespace EmployeeManagementApp.Models.Entities
     [Table("timekeeping_OccupationDetails")]
     public partial class TimekeepingOccupationDetail
     {
-        [Key]         // <-- This tells EF Core that 'Id' is the Primary Key
-        [Column("id")] // <-- Matches the lowercase 'id' column in SSMS
+        [Key]
+        [Column("id")]
         public int Id { get; set; }
 
         [Column("hris_id")]
@@ -41,6 +41,10 @@ namespace EmployeeManagementApp.Models.Entities
 
         [Column("separation_reason")]
         public string? SeparationReason { get; set; }
+
+        // Added SeparationRemarks property
+        [Column("separation_remarks")]
+        public string? SeparationRemarks { get; set; }
 
         [Column("mandatory_immunity")]
         public bool? MandatoryImmunity { get; set; }
